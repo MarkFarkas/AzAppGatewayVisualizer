@@ -45,24 +45,20 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
 #>
     [CmdletBinding()]
     param (
-        # Application Gateway Name
         [Parameter(Mandatory = $True, HelpMessage = "Provide the name of the Application Gateway.")]
         [ValidateNotNullOrEmpty()]
         [string]
         $AppGatewayName,
         
-        # Application Gateway Resource Group Name
         [Parameter(Mandatory = $True, HelpMessage = "Provide the name of the Resource Group where the Application Gateway is located.")]
         [ValidateNotNullOrEmpty()]
         [string]
         $ResourceGroupName,
 
-        # Host names
         [Parameter(HelpMessage = "Provide hostnames to filter on, or leave blank to use all hostnames.")]
         [string[]]
         $Hostnames = "All",
 
-        # Graph direction
         [Parameter(HelpMessage = "Provide graph direction. Default is Top-Bottom (TB).")]
         [string]
         $GraphDirection = 'TB'
