@@ -82,12 +82,27 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
         foreach ($Hostname in $Hostnames) {
             $Listeners = $AppGateway.HttpListeners | Where-Object { $_.Hostname -eq $Hostname }
             foreach ($Listener in $Listeners) {
-                if ($Listener.FirewallPolicy.Id) {
-                    $WafPolicy = Get-AzResource -Id $Listener.FirewallPolicy.Id
+                if ($Listener.FirewallPolicy) {
+                    $PolicyName = $Listener.FirewallPolicy.Id.Split('/')[-1]
+                    $PolicyResourceGroupName = $Listener.FirewallPolicy.Id.Split('/')[4]
+                    $WafPolicy = Get-AzApplicationGatewayFirewallPolicy -Name $PolicyName -ResourceGroupName $PolicyResourceGroupName
                     $MermaidMarkdown += "wafpolicy_$($WafPolicy.Name)[WAF policy: $($WafPolicy.Name)] --> listener_$($Listener.Name)`n"
                 }
+                elseif ($AppGateway.FirewallPolicy) {
+                    $PolicyName = $AppGateway.FirewallPolicy.Id.Split('/')[-1]
+                    $PolicyResourceGroupName = $AppGateway.FirewallPolicy.Id.Split('/')[4]
+                    $WafPolicy = Get-AzApplicationGatewayFirewallPolicy -Name $PolicyName -ResourceGroupName $PolicyResourceGroupName
+                    $MermaidMarkdown += "wafpolicy_$($WafPolicy.Name)[""WAF policy (gateway default): $($WafPolicy.Name)""] --> listener_$($Listener.Name)`n"
+                }
+
+                If($FrontendIpConfiguration.PublicIpAddress){
+                    $PublicIpAddressName = $FrontendIpConfiguration.PublicIpAddress.Id.Split('/')[-1]
+                    $PublicIpAddressResourceGroupName = $FrontendIpConfiguration.PublicIpAddress.Id.Split('/')[4]
+                    $PublicIpAddress = Get-AzPublicIpAddress -Name $PublicIpAddressName -ResourceGroupName $PublicIpAddressResourceGroupName
+                    $MermaidMarkdown += "publicipaddress_$($PublicIpAddress.Name)[Public IP Address: $($PublicIpAddress.Name)<br>$($PublicIpAddress.IpAddress)] --> frontendipconfiguration$($FrontendIpConfiguration.Name)`n"
+                }
                 $FrontendIpConfiguration = $AppGateway.FrontendIPConfigurations | Where-Object Id -eq $Listener.FrontendIpConfiguration.Id
-                $MermaidMarkdown += "frontendipconfiguration$($FrontendIpConfiguration.Name)[Frontend IP: $($FrontendIpConfiguration.Name)] ---> listener_$($Listener.Name)`n"
+                $MermaidMarkdown += "frontendipconfiguration$($FrontendIpConfiguration.Name)[Frontend IP: $($FrontendIpConfiguration.Name)$(If($FrontendIpConfiguration.PrivateIpAddress){"<br>Private IP: $($FrontendIpConfiguration.PrivateIpAddress)"})] ---> listener_$($Listener.Name)`n"
                 
                 $MermaidMarkdown += "listener_$($Listener.Name)[Listener: $($Listener.Name)<br>Hostname: $($Hostname)<br>Port: $($Listener.FrontendPort.Id.Split('_')[-1])<br>Protocol: $($Listener.Protocol.ToUpper())]`n"
                 
@@ -97,7 +112,8 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                     If ($SslCert.KeyVaultSecretId) {
                         $KeyVaultCertificateId = $SslCert.KeyVaultSecretId.Replace('secrets', 'certificates')
                         $KeyVaultCertificateName = $KeyVaultCertificateId.Split('/')[4]
-                        $MermaidMarkdown += "sslcert_$($SslCert.Name) --> keyvaultcert_$($KeyVaultCertificateName)[Key Vault Certificate: $($KeyVaultCertificateId.TrimEnd('/'))]`n"
+                        $KeyVaultName = $KeyVaultCertificateId.Split('/')[2].Split('.')[0]
+                        $MermaidMarkdown += "sslcert_$($SslCert.Name) --> keyvaultcert_$($KeyVaultCertificateName)[Key Vault Certificate: $KeyVaultCertificateName<br>Key Vault: $KeyVaultName]`n"
                     }
                 }
 
@@ -110,7 +126,18 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                         
                         If ($PathRule.BackendAddressPool) {
                             $BackendAddressPool = $AppGateway.BackendAddressPools | Where-Object Id -eq $PathRule.BackendAddressPool.Id
-                            $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) --> backendaddresspool_$($BackendAddressPool.Name)[Backend Address Pool: $($BackendAddressPool.Name)]`n"
+                            $Backends = $BackendAddressPool.BackendAddresses | ForEach-Object {
+                                If ($_.Fqdn) {
+                                    $_.Fqdn
+                                }
+                                elseIf ($_.IpAddress) {
+                                    $_.IpAddress
+                                }
+                                else{
+                                    "No targets"
+                                }
+                            }
+                            $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) --> backendaddresspool_$($BackendAddressPool.Name)[Backend Address Pool: $($BackendAddressPool.Name)<br>Targets:<br>$($Backends -join "`n")]`n"
                             
                             $BackendHttpSetting = $AppGateway.BackendHttpSettingsCollection | Where-Object Id -eq $PathRule.BackendHttpSettings.Id
                             $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) --> backendhttpsetting_$($BackendHttpSetting.Name)[Backend HTTP Setting: $($BackendHttpSetting.Name)]`n"
@@ -144,24 +171,39 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
             }
 
             If ($Rule.BackendAddressPool) {
-                $MermaidMarkdown += "rule_$($Rule.Name) --> rule_$($Rule.Name)_split[ ]`nstyle rule_$($Rule.Name)_split fill:#fff,stroke:#fff,stroke-width:0px;`n"
+                $MermaidMarkdown += "rule_$($Rule.Name)`n"
 
                 $BackendAddressPool = $AppGateway.BackendAddressPools | Where-Object Id -eq $Rule.BackendAddressPool.Id
-                $MermaidMarkdown += "rule_$($Rule.Name)_split --> backendaddresspool_$($BackendAddressPool.Name)[Backend Address Pool: $($BackendAddressPool.Name)]`n"
+                $Backends = $BackendAddressPool.BackendAddresses | ForEach-Object {
+                    If ($_.Fqdn) {
+                        $_.Fqdn
+                    }
+                    elseIf ($_.IpAddress) {
+                        $_.IpAddress
+                    }
+                    else{
+                        "Pool without targets"
+                    }
+                }
+                $MermaidMarkdown += "rule_$($Rule.Name) --> backendaddresspool_$($BackendAddressPool.Name)[Backend Address Pool: $($BackendAddressPool.Name)<br>Targets:<br>$($Backends -join "`n")]`n"
 
                 $BackendHttpSetting = $AppGateway.BackendHttpSettingsCollection | Where-Object Id -eq $Rule.BackendHttpSettings.Id
-                $MermaidMarkdown += "rule_$($Rule.Name)_split --> backendhttpsetting_$($BackendHttpSetting.Name)[Backend HTTP Setting: $($BackendHttpSetting.Name)]`n"
+                $MermaidMarkdown += "rule_$($Rule.Name) --> backendhttpsetting_$($BackendHttpSetting.Name)[Backend HTTP Setting: $($BackendHttpSetting.Name)]`n"
             }
 
             If ($Rule.RewriteRuleSet) {
                 $RewriteRuleSet = $AppGateway.RewriteRuleSets | Where-Object Id -eq $Rule.RewriteRuleSet.Id
-                $MermaidMarkdown += "rule_$($Rule.Name)_split --> rewriteruleset_$($RewriteRuleSet.Name)[Rewrite Rule Set: $($RewriteRuleSet.Name)]`n"
+                $MermaidMarkdown += "rule_$($Rule.Name) --> rewriteruleset_$($RewriteRuleSet.Name)[Rewrite Rule Set: $($RewriteRuleSet.Name)]`n"
             }
         }
     }
     end {
+        #Remove duplicate lines from the diagram
+        $MermaidMarkdown = ($MermaidMarkdown -split "`n" | Select-Object -Unique) -join "`n"
+
         Return [PSCustomObject]@{
             MermaidMarkdown = $MermaidMarkdown
         }
     }
 }
+
