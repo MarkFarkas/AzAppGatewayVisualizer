@@ -126,7 +126,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                         If ($RedirectConfiguration.TargetUrl) {
                             $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) -- Redirects to --> redirectconfiguration_$($RedirectConfiguration.Name)[External URL: $($RedirectConfiguration.TargetUrl)]`n"
                         }
-                        Else {
+                        elseif ($RedirectConfiguration.TargetListener) {
                             $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) -- Redirects to --> listener_$($RedirectConfiguration.TargetListener.Id.Split('/')[-1])`n"  
                         }
                     }   
@@ -159,11 +159,9 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
             }
         }
     }
-}
-    
-end {
-    Return [PSCustomObject]@{
-        MermaidMarkdown = $MermaidMarkdown
+    end {
+        Return [PSCustomObject]@{
+            MermaidMarkdown = $MermaidMarkdown
+        }
     }
-}
 }
