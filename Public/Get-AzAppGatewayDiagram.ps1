@@ -95,7 +95,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                     $SslCert = $AppGateway.SslCertificates | Where-Object Id -eq $Listener.SslCertificate.Id
                     $MermaidMarkdown += "sslcert_$($SslCert.Name)[SSL Cert: $($SslCert.Name)] --> listener_$($Listener.Name)`n"
                     If ($SslCert.KeyVaultSecretId) {
-                        $KeyVaultCertificateId = $SslCert.KeyVaultSecretId.Replace('secrets','certificates')
+                        $KeyVaultCertificateId = $SslCert.KeyVaultSecretId.Replace('secrets', 'certificates')
                         $KeyVaultCertificateName = $KeyVaultCertificateId.Split('/')[4]
                         $MermaidMarkdown += "sslcert_$($SslCert.Name) --> keyvaultcert_$($KeyVaultCertificateName)[Key Vault Certificate: $($KeyVaultCertificateId.TrimEnd('/'))]`n"
                     }
@@ -105,46 +105,65 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                 $MermaidMarkdown += "listener_$($Listener.Name) --> rule_$($Rule.Name)[Request Routing Rule: $($Rule.Name)]`n"
                 if ($Rule.UrlPathMap.Id) {
                     $UrlPathMap = $AppGateway.UrlPathMaps | Where-Object Id -eq $Rule.UrlPathMap.Id
-                    $MermaidMarkdown += "rule_$($Rule.Name) -- URL Paths: $($UrlPathMap.PathRules.Paths -join '<br>') ---> urlpathmap_$($UrlPathMap.Name)_split[ ]`nstyle urlpathmap_$($UrlPathMap.Name)_split fill:#fff,stroke:#fff,stroke-width:0px;`n"
-                    
-                    $BackendAddressPool = $AppGateway.BackendAddressPools | Where-Object Id -eq $UrlPathMap.PathRules.BackendAddressPool.Id
-                    $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_split --> backendaddresspool_$($BackendAddressPool.Name)[Backend Address Pool: $($BackendAddressPool.Name)]`n"
-                    
-                    $BackendHttpSetting = $AppGateway.BackendHttpSettingsCollection | Where-Object Id -eq $UrlPathMap.PathRules.BackendHttpSettings.Id
-                    $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_split --> backendhttpsetting_$($BackendHttpSetting.Name)[Backend HTTP Setting: $($BackendHttpSetting.Name)]`n"
+                    Foreach ($PathRule in $UrlPathMap.PathRules) {
+                        $MermaidMarkdown += "rule_$($Rule.Name) -- URL Paths: $($UrlPathMap.PathRules.Paths -join '<br>') ---> urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name)[Path Rule: $($PathRule.Name)]`n"
+                        
+                        If ($PathRule.BackendAddressPool) {
+                            $BackendAddressPool = $AppGateway.BackendAddressPools | Where-Object Id -eq $PathRule.BackendAddressPool.Id
+                            $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) --> backendaddresspool_$($BackendAddressPool.Name)[Backend Address Pool: $($BackendAddressPool.Name)]`n"
+                            
+                            $BackendHttpSetting = $AppGateway.BackendHttpSettingsCollection | Where-Object Id -eq $PathRule.BackendHttpSettings.Id
+                            $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) --> backendhttpsetting_$($BackendHttpSetting.Name)[Backend HTTP Setting: $($BackendHttpSetting.Name)]`n"
+                        }
+                        
+                        If ($PathRule.RewriteRuleSet) {
+                            $RewriteRuleSet = $AppGateway.RewriteRuleSets | Where-Object Id -eq $PathRule.RewriteRuleSet.Id
+                            $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) --> rewriteruleset_$($RewriteRuleSet.Name)[Rewrite Rule Set: $($RewriteRuleSet.Name)]`n"
+                            
+                        }
+
+                        $RedirectConfiguration = $AppGateway.RedirectConfigurations | Where-Object Id -eq $($AppGateway.Id + "/redirectConfigurations/" + $Rule.Name + "_" + $PathRule.Name)
+                        If ($RedirectConfiguration.TargetUrl) {
+                            $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) -- Redirects to --> redirectconfiguration_$($RedirectConfiguration.Name)[External URL: $($RedirectConfiguration.TargetUrl)]`n"
+                        }
+                        Else {
+                            $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) -- Redirects to --> listener_$($RedirectConfiguration.TargetListener.Id.Split('/')[-1])`n"  
+                        }
+                    }   
                 }
+            }
 
-                $RedirectConfiguration = $AppGateway.RedirectConfigurations | Where-Object Id -eq $($AppGateway.Id + "/redirectConfigurations/" + $Rule.Name)
-                If ($RedirectConfiguration) {
-                    If ($RedirectConfiguration.TargetUrl) {
-                        $MermaidMarkdown += "rule_$($Rule.Name) -- Redirects to --> redirectconfiguration_$($RedirectConfiguration.Name)[External URL: $($RedirectConfiguration.TargetUrl)]`n"
-                    }
-                    Else {
-                        $MermaidMarkdown += "rule_$($Rule.Name) -- Redirects to --> listener_$($RedirectConfiguration.TargetListener.Id.Split('/')[-1])`n"
-                    }  
+            $RedirectConfiguration = $AppGateway.RedirectConfigurations | Where-Object Id -eq $($AppGateway.Id + "/redirectConfigurations/" + $Rule.Name)
+            If ($RedirectConfiguration) {
+                If ($RedirectConfiguration.TargetUrl) {
+                    $MermaidMarkdown += "rule_$($Rule.Name) -- Redirects to --> redirectconfiguration_$($RedirectConfiguration.Name)[External URL: $($RedirectConfiguration.TargetUrl)]`n"
                 }
+                Else {
+                    $MermaidMarkdown += "rule_$($Rule.Name) -- Redirects to --> listener_$($RedirectConfiguration.TargetListener.Id.Split('/')[-1])`n"
+                }  
+            }
 
-                If ($Rule.BackendAddressPool) {
-                    $MermaidMarkdown += "rule_$($Rule.Name) --> rule_$($Rule.Name)_split[ ]`nstyle rule_$($Rule.Name)_split fill:#fff,stroke:#fff,stroke-width:0px;`n"
+            If ($Rule.BackendAddressPool) {
+                $MermaidMarkdown += "rule_$($Rule.Name) --> rule_$($Rule.Name)_split[ ]`nstyle rule_$($Rule.Name)_split fill:#fff,stroke:#fff,stroke-width:0px;`n"
 
-                    $BackendAddressPool = $AppGateway.BackendAddressPools | Where-Object Id -eq $Rule.BackendAddressPool.Id
-                    $MermaidMarkdown += "rule_$($Rule.Name)_split --> backendaddresspool_$($BackendAddressPool.Name)[Backend Address Pool: $($BackendAddressPool.Name)]`n"
+                $BackendAddressPool = $AppGateway.BackendAddressPools | Where-Object Id -eq $Rule.BackendAddressPool.Id
+                $MermaidMarkdown += "rule_$($Rule.Name)_split --> backendaddresspool_$($BackendAddressPool.Name)[Backend Address Pool: $($BackendAddressPool.Name)]`n"
 
-                    $BackendHttpSetting = $AppGateway.BackendHttpSettingsCollection | Where-Object Id -eq $Rule.BackendHttpSettings.Id
-                    $MermaidMarkdown += "rule_$($Rule.Name)_split --> backendhttpsetting_$($BackendHttpSetting.Name)[Backend HTTP Setting: $($BackendHttpSetting.Name)]`n"
-                }
+                $BackendHttpSetting = $AppGateway.BackendHttpSettingsCollection | Where-Object Id -eq $Rule.BackendHttpSettings.Id
+                $MermaidMarkdown += "rule_$($Rule.Name)_split --> backendhttpsetting_$($BackendHttpSetting.Name)[Backend HTTP Setting: $($BackendHttpSetting.Name)]`n"
+            }
 
-                If ($Rule.RewriteRuleSet) {
-                    $RewriteRuleSet = $AppGateway.RewriteRuleSets | Where-Object Id -eq $Rule.RewriteRuleSet.Id
-                    $MermaidMarkdown += "rule_$($Rule.Name)_split --> rewriteruleset_$($RewriteRuleSet.Name)[Rewrite Rule Set: $($RewriteRuleSet.Name)]`n"
-                }
+            If ($Rule.RewriteRuleSet) {
+                $RewriteRuleSet = $AppGateway.RewriteRuleSets | Where-Object Id -eq $Rule.RewriteRuleSet.Id
+                $MermaidMarkdown += "rule_$($Rule.Name)_split --> rewriteruleset_$($RewriteRuleSet.Name)[Rewrite Rule Set: $($RewriteRuleSet.Name)]`n"
             }
         }
     }
+}
     
-    end {
-        Return [PSCustomObject]@{
-            MermaidMarkdown = $MermaidMarkdown
-        }
+end {
+    Return [PSCustomObject]@{
+        MermaidMarkdown = $MermaidMarkdown
     }
+}
 }
