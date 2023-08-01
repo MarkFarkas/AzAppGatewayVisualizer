@@ -25,12 +25,16 @@ graph TB
   sslcert_workload1-sslcert[SSL Cert: workload1-sslcert] --> listener_workload1-listener-https
   sslcert_workload1-sslcert --> keyvaultcert_workload1-sslcert[Key Vault Certificate: workload1-sslcert<br>Key Vault: kv-appgw]
   listener_workload1-listener-https --> rule_workload1-rule-https[Request Routing Rule: workload1-rule-https]
+  rule_workload1-rule-https
+  rule_workload1-rule-https --> backendaddresspool_workload1-backendpool[Backend Address Pool: workload1-backendpool<br>Targets:<br>workload1-a.example.local<br>workload1-b.example.local]
+  rule_workload1-rule-https --> backendhttpsetting_default-backendsetting[Backend HTTP Setting: default-backendsetting]
   wafpolicy_workload1-waf[WAF policy: workload1-waf] --> listener_workload1-listener-http
-  publicipaddress_appgw-01-pip[Public IP Address: appgw-01-pip<br>X.X.X.X] --> frontendipconfigurationappGwPublicFrontendIpIPv4
+  publicipaddress_appgw-01-pip[Public IP Address: appgw-01-pip<br>51.11.245.39] --> frontendipconfigurationappGwPublicFrontendIpIPv4
   frontendipconfigurationappGwPublicFrontendIpIPv4[Frontend IP: appGwPublicFrontendIpIPv4] ---> listener_workload1-listener-http
   listener_workload1-listener-http[Listener: workload1-listener-http<br>Hostname: workload1.example.com<br>Port: 80<br>Protocol: HTTP]
   listener_workload1-listener-http --> rule_workload1-rule-http[Request Routing Rule: workload1-rule-http]
   rule_workload1-rule-http -- Redirects to --> listener_workload1-listener-https
+
 
 ```
 ### Get a diagram for multiple hostnames:
@@ -45,8 +49,11 @@ graph TB
   sslcert_workload1-sslcert[SSL Cert: workload1-sslcert] --> listener_workload1-listener-https
   sslcert_workload1-sslcert --> keyvaultcert_workload1-sslcert[Key Vault Certificate: workload1-sslcert<br>Key Vault: kv-appgw]
   listener_workload1-listener-https --> rule_workload1-rule-https[Request Routing Rule: workload1-rule-https]
+  rule_workload1-rule-https
+  rule_workload1-rule-https --> backendaddresspool_workload1-backendpool[Backend Address Pool: workload1-backendpool<br>Targets:<br>workload1-a.example.local<br>workload1-b.example.local]
+  rule_workload1-rule-https --> backendhttpsetting_default-backendsetting[Backend HTTP Setting: default-backendsetting]
   wafpolicy_workload1-waf[WAF policy: workload1-waf] --> listener_workload1-listener-http
-  publicipaddress_appgw-01-pip[Public IP Address: appgw-01-pip<br>X.X.X.X] --> frontendipconfigurationappGwPublicFrontendIpIPv4
+  publicipaddress_appgw-01-pip[Public IP Address: appgw-01-pip<br>51.11.245.39] --> frontendipconfigurationappGwPublicFrontendIpIPv4
   frontendipconfigurationappGwPublicFrontendIpIPv4[Frontend IP: appGwPublicFrontendIpIPv4] ---> listener_workload1-listener-http
   listener_workload1-listener-http[Listener: workload1-listener-http<br>Hostname: workload1.example.com<br>Port: 80<br>Protocol: HTTP]
   listener_workload1-listener-http --> rule_workload1-rule-http[Request Routing Rule: workload1-rule-http]
@@ -61,7 +68,6 @@ graph TB
   rule_workload3-rule-https --> backendaddresspool_workload3-backendpool[Backend Address Pool: workload3-backendpool<br>Targets:<br>workload3.example.local]
   rule_workload3-rule-https --> backendhttpsetting_workload3-backendsetting[Backend HTTP Setting: workload3-backendsetting]
   rule_workload3-rule-https --> rewriteruleset_workload3-rewriteruleset[Rewrite Rule Set: workload3-rewriteruleset]
-
 ```
 
 ### Get a diagram for all hostnames on a gateway
@@ -77,6 +83,9 @@ graph TB
   sslcert_workload1-sslcert[SSL Cert: workload1-sslcert] --> listener_workload1-listener-https
   sslcert_workload1-sslcert --> keyvaultcert_workload1-sslcert[Key Vault Certificate: workload1-sslcert<br>Key Vault: kv-appgw]
   listener_workload1-listener-https --> rule_workload1-rule-https[Request Routing Rule: workload1-rule-https]
+  rule_workload1-rule-https
+  rule_workload1-rule-https --> backendaddresspool_workload1-backendpool[Backend Address Pool: workload1-backendpool<br>Targets:<br>workload1-a.example.local<br>workload1-b.example.local]
+  rule_workload1-rule-https --> backendhttpsetting_default-backendsetting[Backend HTTP Setting: default-backendsetting]
   wafpolicy_workload1-waf[WAF policy: workload1-waf] --> listener_workload1-listener-http
   publicipaddress_appgw-01-pip[Public IP Address: appgw-01-pip<br>X.X.X.X] --> frontendipconfigurationappGwPublicFrontendIpIPv4
   frontendipconfigurationappGwPublicFrontendIpIPv4[Frontend IP: appGwPublicFrontendIpIPv4] ---> listener_workload1-listener-http
@@ -107,6 +116,7 @@ graph TB
   rule_workload3-rule-https --> backendaddresspool_workload3-backendpool[Backend Address Pool: workload3-backendpool<br>Targets:<br>workload3.example.local]
   rule_workload3-rule-https --> backendhttpsetting_workload3-backendsetting[Backend HTTP Setting: workload3-backendsetting]
   rule_workload3-rule-https --> rewriteruleset_workload3-rewriteruleset[Rewrite Rule Set: workload3-rewriteruleset]
+
 ```
 ## Contributing
 If you find any issues or have suggestions for improvements, feel free to open an issue or submit a pull request.
