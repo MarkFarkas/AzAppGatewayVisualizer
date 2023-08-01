@@ -205,4 +205,3 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
         }
     }
 }
-(Get-AzAppGatewayDiagram -AppGatewayName appgw-01 -ResourceGroupName rg-az-app-gateway-visualizer -Hostnames "workload1.example.com").MermaidMarkdown > mermaid.md
