@@ -63,7 +63,6 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
         [string]
         $GraphDirection = 'TB'
     )
-    
     begin {
         try {
             $AppGateway = Get-AzApplicationGateway -Name $AppGatewayName -ResourceGroupName $ResourceGroupName
@@ -95,7 +94,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                     $MermaidMarkdown += "wafpolicy_$($WafPolicy.Name)[""WAF policy (gateway default): $($WafPolicy.Name)""] --> listener_$($Listener.Name)`n"
                 }
 
-                If($FrontendIpConfiguration.PublicIpAddress){
+                If ($FrontendIpConfiguration.PublicIpAddress) {
                     $PublicIpAddressName = $FrontendIpConfiguration.PublicIpAddress.Id.Split('/')[-1]
                     $PublicIpAddressResourceGroupName = $FrontendIpConfiguration.PublicIpAddress.Id.Split('/')[4]
                     $PublicIpAddress = Get-AzPublicIpAddress -Name $PublicIpAddressName -ResourceGroupName $PublicIpAddressResourceGroupName
@@ -133,7 +132,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                                 elseIf ($_.IpAddress) {
                                     $_.IpAddress
                                 }
-                                else{
+                                else {
                                     "No targets"
                                 }
                             }
@@ -158,42 +157,42 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                         }
                     }   
                 }
-            }
 
-            $RedirectConfiguration = $AppGateway.RedirectConfigurations | Where-Object Id -eq $($AppGateway.Id + "/redirectConfigurations/" + $Rule.Name)
-            If ($RedirectConfiguration) {
-                If ($RedirectConfiguration.TargetUrl) {
-                    $MermaidMarkdown += "rule_$($Rule.Name) -- Redirects to --> redirectconfiguration_$($RedirectConfiguration.Name)[External URL: $($RedirectConfiguration.TargetUrl)]`n"
+                $RedirectConfiguration = $AppGateway.RedirectConfigurations | Where-Object Id -eq $($AppGateway.Id + "/redirectConfigurations/" + $Rule.Name)
+                If ($RedirectConfiguration) {
+                    If ($RedirectConfiguration.TargetUrl) {
+                        $MermaidMarkdown += "rule_$($Rule.Name) -- Redirects to --> redirectconfiguration_$($RedirectConfiguration.Name)[External URL: $($RedirectConfiguration.TargetUrl)]`n"
+                    }
+                    Else {
+                        $MermaidMarkdown += "rule_$($Rule.Name) -- Redirects to --> listener_$($RedirectConfiguration.TargetListener.Id.Split('/')[-1])`n"
+                    }  
                 }
-                Else {
-                    $MermaidMarkdown += "rule_$($Rule.Name) -- Redirects to --> listener_$($RedirectConfiguration.TargetListener.Id.Split('/')[-1])`n"
-                }  
-            }
-
-            If ($Rule.BackendAddressPool) {
-                $MermaidMarkdown += "rule_$($Rule.Name)`n"
-
-                $BackendAddressPool = $AppGateway.BackendAddressPools | Where-Object Id -eq $Rule.BackendAddressPool.Id
-                $Backends = $BackendAddressPool.BackendAddresses | ForEach-Object {
-                    If ($_.Fqdn) {
-                        $_.Fqdn
+    
+                If ($Rule.BackendAddressPool) {
+                    $MermaidMarkdown += "rule_$($Rule.Name)`n"
+    
+                    $BackendAddressPool = $AppGateway.BackendAddressPools | Where-Object Id -eq $Rule.BackendAddressPool.Id
+                    $Backends = $BackendAddressPool.BackendAddresses | ForEach-Object {
+                        If ($_.Fqdn) {
+                            $_.Fqdn
+                        }
+                        elseIf ($_.IpAddress) {
+                            $_.IpAddress
+                        }
+                        else {
+                            "Pool without targets"
+                        }
                     }
-                    elseIf ($_.IpAddress) {
-                        $_.IpAddress
-                    }
-                    else{
-                        "Pool without targets"
-                    }
+                    $MermaidMarkdown += "rule_$($Rule.Name) --> backendaddresspool_$($BackendAddressPool.Name)[Backend Address Pool: $($BackendAddressPool.Name)<br>Targets:<br>$($Backends -join "<br>")]`n"
+    
+                    $BackendHttpSetting = $AppGateway.BackendHttpSettingsCollection | Where-Object Id -eq $Rule.BackendHttpSettings.Id
+                    $MermaidMarkdown += "rule_$($Rule.Name) --> backendhttpsetting_$($BackendHttpSetting.Name)[Backend HTTP Setting: $($BackendHttpSetting.Name)]`n"
                 }
-                $MermaidMarkdown += "rule_$($Rule.Name) --> backendaddresspool_$($BackendAddressPool.Name)[Backend Address Pool: $($BackendAddressPool.Name)<br>Targets:<br>$($Backends -join "`n")]`n"
-
-                $BackendHttpSetting = $AppGateway.BackendHttpSettingsCollection | Where-Object Id -eq $Rule.BackendHttpSettings.Id
-                $MermaidMarkdown += "rule_$($Rule.Name) --> backendhttpsetting_$($BackendHttpSetting.Name)[Backend HTTP Setting: $($BackendHttpSetting.Name)]`n"
-            }
-
-            If ($Rule.RewriteRuleSet) {
-                $RewriteRuleSet = $AppGateway.RewriteRuleSets | Where-Object Id -eq $Rule.RewriteRuleSet.Id
-                $MermaidMarkdown += "rule_$($Rule.Name) --> rewriteruleset_$($RewriteRuleSet.Name)[Rewrite Rule Set: $($RewriteRuleSet.Name)]`n"
+    
+                If ($Rule.RewriteRuleSet) {
+                    $RewriteRuleSet = $AppGateway.RewriteRuleSets | Where-Object Id -eq $Rule.RewriteRuleSet.Id
+                    $MermaidMarkdown += "rule_$($Rule.Name) --> rewriteruleset_$($RewriteRuleSet.Name)[Rewrite Rule Set: $($RewriteRuleSet.Name)]`n"
+                }
             }
         }
     }
@@ -206,4 +205,4 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
         }
     }
 }
-
+(Get-AzAppGatewayDiagram -AppGatewayName appgw-01 -ResourceGroupName rg-az-app-gateway-visualizer -Hostnames "workload1.example.com").MermaidMarkdown > mermaid.md
