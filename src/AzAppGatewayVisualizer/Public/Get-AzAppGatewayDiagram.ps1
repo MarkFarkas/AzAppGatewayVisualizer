@@ -87,7 +87,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                     $MermaidMarkdown += "wafpolicy_$($WafPolicy.Name)[WAF policy: $($WafPolicy.Name)] --> listener_$($Listener.Name)`n"
                 }
                 $FrontendIpConfiguration = $AppGateway.FrontendIPConfigurations | Where-Object Id -eq $Listener.FrontendIpConfiguration.Id
-                $MermaidMarkdown += "frontendipconfiguration$($FrontendIpConfiguration.Name)[Frontend IP: $($FrontendIpConfiguration.Name)] ---> listener_$($Listener.Name)`n"
+                $MermaidMarkdown += "frontendipconfiguration$($FrontendIpConfiguration.Name)[Frontend IP: $($FrontendIpConfiguration.Name)$(If($FrontendIpConfiguration.PrivateIpAddress){"<br>Private IP: $($FrontendIpConfiguration.PrivateIpAddress)"})] ---> listener_$($Listener.Name)`n"
                 
                 $MermaidMarkdown += "listener_$($Listener.Name)[Listener: $($Listener.Name)<br>Hostname: $($Hostname)<br>Port: $($Listener.FrontendPort.Id.Split('_')[-1])<br>Protocol: $($Listener.Protocol.ToUpper())]`n"
                 
