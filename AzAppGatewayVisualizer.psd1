@@ -24,7 +24,7 @@ GUID = '13019d42-8221-4cd2-90ba-0c87a388c16f'
 Author = 'Mark Farkas'
 
 # Description of the functionality provided by this module
-# Description = ''
+Description = 'AzAppGatewayVisualizer: PowerShell module to generate Mermaid diagrams for Azure Application Gateway resources, providing a visual overview of listeners, frontend IPs, WAF policies, rules, backend pools, and HTTP settings. '
 
 # Minimum version of the PowerShell engine required by this module
 # PowerShellVersion = ''
@@ -74,10 +74,10 @@ PrivateData = @{
         # Tags = @()
 
         # A URL to the license for this module.
-        # LicenseUri = 'https://github.com/MarkFarkas/AzAppGatewayVisualizer/blob/main/LICENSE'
+        LicenseUri = 'https://github.com/MarkFarkas/AzAppGatewayVisualizer/blob/main/LICENSE'
 
         # A URL to the main website for this project.
-        # ProjectUri = 'https://github.com/MarkFarkas/AzAppGatewayVisualizer'
+        ProjectUri = 'https://github.com/MarkFarkas/AzAppGatewayVisualizer'
 
         # A URL to an icon representing this module.
         # IconUri = ''
