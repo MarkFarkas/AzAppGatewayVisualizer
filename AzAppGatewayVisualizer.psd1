@@ -12,7 +12,7 @@
 RootModule = 'AzAppGatewayVisualizer.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0'
+ModuleVersion = '0.1'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -35,9 +35,6 @@ Author = 'Mark Farkas'
 # Minimum version of the PowerShell host required by this module
 # PowerShellHostVersion = ''
 
-# Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
-# DotNetFrameworkVersion = ''
-
 # Minimum version of the common language runtime (CLR) required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
 # ClrVersion = ''
 
@@ -46,21 +43,6 @@ Author = 'Mark Farkas'
 
 # Modules that must be imported into the global environment prior to importing this module
 # RequiredModules = @()
-
-# Assemblies that must be loaded prior to importing this module
-# RequiredAssemblies = @()
-
-# Script files (.ps1) that are run in the caller's environment prior to importing this module.
-# ScriptsToProcess = @()
-
-# Type files (.ps1xml) to be loaded when importing this module
-# TypesToProcess = @()
-
-# Format files (.ps1xml) to be loaded when importing this module
-# FormatsToProcess = @()
-
-# Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-# NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @('Get-AzAppGatewayDiagram')
