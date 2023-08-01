@@ -206,6 +206,4 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
         }
     }
 }
-(get-azappGatewayDiagram -AppGatewayName $appGateway.name -ResourceGroupName $appGateway.ResourceGroupName).MermaidMarkdown > mermaid_all.md
-(get-azappGatewayDiagram -AppGatewayName $appGateway.name -ResourceGroupName $appGateway.ResourceGroupName -Hostnames "workload1.example.com").MermaidMarkdown > mermaid.md
 
