@@ -136,7 +136,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                                     "No targets"
                                 }
                             }
-                            $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) --> backendaddresspool_$($BackendAddressPool.Name)[Backend Address Pool: $($BackendAddressPool.Name)<br>Targets:<br>$($Backends -join "`n")]`n"
+                            $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) --> backendaddresspool_$($BackendAddressPool.Name)[Backend Address Pool: $($BackendAddressPool.Name)<br>Targets:<br>$($Backends -join "<br>")]`n"
                             
                             $BackendHttpSetting = $AppGateway.BackendHttpSettingsCollection | Where-Object Id -eq $PathRule.BackendHttpSettings.Id
                             $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) --> backendhttpsetting_$($BackendHttpSetting.Name)[Backend HTTP Setting: $($BackendHttpSetting.Name)]`n"
