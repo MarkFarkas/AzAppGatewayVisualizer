@@ -71,7 +71,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
             Write-Error "Failed to find Application Gateway with name '$AppGatewayName' in resource group '$ResourceGroupName'."
             return
         }
-        $MermaidMarkdown = "graph $($GraphDirection)`n"
+        $Diagram = [MermaidDiagram]::new($GraphDirection)
         If ($Hostnames -eq "All") {
             $Hostnames = $AppGateway.HttpListeners.Hostname | Select-Object -Unique
         }
@@ -85,7 +85,10 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                     $PolicyName = $Listener.FirewallPolicy.Id.Split('/')[-1]
                     $PolicyResourceGroupName = $Listener.FirewallPolicy.Id.Split('/')[4]
                     $WafPolicy = Get-AzApplicationGatewayFirewallPolicy -Name $PolicyName -ResourceGroupName $PolicyResourceGroupName
-                    $MermaidMarkdown += "wafpolicy_$($WafPolicy.Name)[WAF policy: $($WafPolicy.Name)] --> listener_$($Listener.Name)`n"
+                    $MermaidMarkdown += "wafpolicy_$($WafPolicy.Name)[] --> listener_$($Listener.Name)`n"
+
+                    $Diagram.AddNode("wafpolicy_$($WafPolicy.Name)", "WAF policy: $($WafPolicy.Name)")
+                    $Diagram.AddEdge("wafpolicy_$($WafPolicy.Name)", "listener_$($Listener.Name)")
                 }
                 elseif ($AppGateway.FirewallPolicy) {
                     $PolicyName = $AppGateway.FirewallPolicy.Id.Split('/')[-1]
