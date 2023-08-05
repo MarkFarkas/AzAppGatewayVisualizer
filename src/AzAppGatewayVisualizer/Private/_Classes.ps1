@@ -48,11 +48,19 @@ Class MermaidDiagram {
         $this.GraphDirection =$GraphDirection
     }
 
+    #Add by name and label
     [void]AddNode(
         [string]$Name, 
         [string]$Label
     ) {
         $Node = [MermaidNode]::new($Name, $Label)
+        $this.Nodes.Add($Node)
+    }
+
+    #Add node by node object
+    [void]AddNode(
+        [MermaidNode]$Node
+    ) {
         $this.Nodes.Add($Node)
     }
 
