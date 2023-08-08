@@ -92,7 +92,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
 
                     $WafPolicyNode = [MermaidNode]::new("wafpolicy_$($WafPolicy.Name)", "WAF policy: $($WafPolicy.Name)")
                     $Diagram.AddNode($WafPolicyNode)
-                    $Diagram.AddEdge($WafPolicyNode.Name, $ListenerNode.Name)
+                    $Diagram.AddLink($WafPolicyNode.Name, $ListenerNode.Name)
                 }
                 elseif ($AppGateway.FirewallPolicy) {
                     $PolicyName = $AppGateway.FirewallPolicy.Id.Split('/')[-1]
@@ -101,13 +101,13 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
 
                     $WafPolicyNode = [MermaidNode]::new("wafpolicy_$($WafPolicy.Name)", "WAF policy (gateway default): $($WafPolicy.Name)")
                     $Diagram.AddNode($WafPolicyNode)
-                    $Diagram.AddEdge($WafPolicyNode.Name, $ListenerNode.Name)
+                    $Diagram.AddLink($WafPolicyNode.Name, $ListenerNode.Name)
                 }
 
                 $FrontendIpConfiguration = $AppGateway.FrontendIPConfigurations | Where-Object Id -eq $Listener.FrontendIpConfiguration.Id
                 $FrontendIpConfigurationNode = [MermaidNode]::new("frontendipconfiguration_$($FrontendIpConfiguration.Name)", "Frontend IP: $($FrontendIpConfiguration.Name)$(If($FrontendIpConfiguration.PrivateIpAddress){"<br>Private IP: $($FrontendIpConfiguration.PrivateIpAddress)"})")
                 $Diagram.AddNode($FrontendIpConfigurationNode)
-                $Diagram.AddEdge($FrontendIpConfigurationNode.Name, $ListenerNode.Name)
+                $Diagram.AddLink($FrontendIpConfigurationNode.Name, $ListenerNode.Name)
 
                 If ($FrontendIpConfiguration.PublicIpAddress) {
                     $PublicIpAddressName = $FrontendIpConfiguration.PublicIpAddress.Id.Split('/')[-1]
@@ -116,14 +116,14 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
 
                     $PublicIpAddressNode = [MermaidNode]::new("publicipaddress_$($PublicIpAddress.Name)", "Public IP Address: $($PublicIpAddress.Name)<br>$($PublicIpAddress.IpAddress)")
                     $Diagram.AddNode($PublicIpAddressNode)
-                    $Diagram.AddEdge($PublicIpAddressNode.Name, $FrontendIpConfigurationNode.Name)
+                    $Diagram.AddLink($PublicIpAddressNode.Name, $FrontendIpConfigurationNode.Name)
                 }
                 
                 if ($Listener.Protocol -eq 'Https') {
                     $SslCert = $AppGateway.SslCertificates | Where-Object Id -eq $Listener.SslCertificate.Id
                     $SslCertNode = [MermaidNode]::new("sslcert_$($SslCert.Name)", "SSL Cert: $($SslCert.Name)")
                     $Diagram.AddNode($SslCertNode)
-                    $Diagram.AddEdge($SslCertNode.Name, $ListenerNode.Name)
+                    $Diagram.AddLink($SslCertNode.Name, $ListenerNode.Name)
 
                     If ($SslCert.KeyVaultSecretId) {
                         $KeyVaultCertificateId = $SslCert.KeyVaultSecretId.Replace('secrets', 'certificates')
@@ -132,7 +132,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
 
                         $KeyVaultCertificateNode = [MermaidNode]::new("keyvaultcert_$($KeyVaultCertificateName)", "Key Vault Certificate: $KeyVaultCertificateName<br>Key Vault: $KeyVaultName")
                         $Diagram.AddNode($KeyVaultCertificateNode)
-                        $Diagram.AddEdge($SslCertNode.Name, $KeyVaultCertificateNode.Name)
+                        $Diagram.AddLink($SslCertNode.Name, $KeyVaultCertificateNode.Name)
                     }
                 }
 
@@ -140,7 +140,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
 
                 $RuleNode = [MermaidNode]::new("rule_$($Rule.Name)", "Request Routing Rule: $($Rule.Name)")
                 $Diagram.AddNode($RuleNode)
-                $Diagram.AddEdge($ListenerNode.Name, $RuleNode.Name)
+                $Diagram.AddLink($ListenerNode.Name, $RuleNode.Name)
 
                 if ($Rule.UrlPathMap.Id) {
                     $UrlPathMap = $AppGateway.UrlPathMaps | Where-Object Id -eq $Rule.UrlPathMap.Id
@@ -148,7 +148,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
 
                         $UrlPathMapNode = [MermaidNode]::new("urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name)", "Path Rule: $($PathRule.Name)")
                         $Diagram.AddNode($UrlPathMapNode)
-                        $Diagram.AddEdge($RuleNode.Name, $UrlPathMapNode.Name, "URL Paths: $($UrlPathMap.PathRules.Paths -join '<br>')")
+                        $Diagram.AddLink($RuleNode.Name, $UrlPathMapNode.Name, "URL Paths: $($UrlPathMap.PathRules.Paths -join '<br>')")
                         
                         If ($PathRule.BackendAddressPool) {
                             $BackendAddressPool = $AppGateway.BackendAddressPools | Where-Object Id -eq $PathRule.BackendAddressPool.Id
@@ -166,28 +166,28 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
 
                             $BackendAddressPoolNode = [MermaidNode]::new("backendaddresspool_$($BackendAddressPool.Name)", "Backend Address Pool: $($BackendAddressPool.Name)<br>Targets:<br>$($Backends -join "<br>")")
                             $Diagram.AddNode($BackendAddressPoolNode)
-                            $Diagram.AddEdge($UrlPathMapNode.Name, $BackendAddressPoolNode.Name)
+                            $Diagram.AddLink($UrlPathMapNode.Name, $BackendAddressPoolNode.Name)
                             
                             $BackendHttpSetting = $AppGateway.BackendHttpSettingsCollection | Where-Object Id -eq $PathRule.BackendHttpSettings.Id
                             $BackendHttpSettingNode = [MermaidNode]::new("backendhttpsetting_$($BackendHttpSetting.Name)", "Backend HTTP Setting: $($BackendHttpSetting.Name)")
                             $Diagram.AddNode($BackendHttpSettingNode)
-                            $Diagram.AddEdge($UrlPathMapNode.Name, $BackendHttpSettingNode.Name)
+                            $Diagram.AddLink($UrlPathMapNode.Name, $BackendHttpSettingNode.Name)
                         }
                         
                         If ($PathRule.RewriteRuleSet) {
                             $RewriteRuleSet = $AppGateway.RewriteRuleSets | Where-Object Id -eq $PathRule.RewriteRuleSet.Id
                             $RewriteRuleSetNode = [MermaidNode]::new("rewriteruleset_$($RewriteRuleSet.Name)", "Rewrite Rule Set: $($RewriteRuleSet.Name)")
-                            $Diagram.AddEdge($UrlPathMapNode.Name, $RewriteRuleSetNode.Name)
+                            $Diagram.AddLink($UrlPathMapNode.Name, $RewriteRuleSetNode.Name)
                         }
 
                         $RedirectConfiguration = $AppGateway.RedirectConfigurations | Where-Object Id -eq $($AppGateway.Id + "/redirectConfigurations/" + $Rule.Name + "_" + $PathRule.Name)
                         If ($RedirectConfiguration.TargetUrl) {
                             $RedirectConfigurationNode = [MermaidNode]::new("redirectconfiguration_$($RedirectConfiguration.Name)", "External URL: $($RedirectConfiguration.TargetUrl)")
                             $Diagram.AddNode($RedirectConfigurationNode)
-                            $Diagram.AddEdge($UrlPathMapNode.Name, $RedirectConfigurationNode.Name,"Redirects to")
+                            $Diagram.AddLink($UrlPathMapNode.Name, $RedirectConfigurationNode.Name,"Redirects to")
                         }
                         elseif ($RedirectConfiguration.TargetListener) {
-                            $Diagram.AddEdge($UrlPathMapNode.Name, "listener_$($RedirectConfiguration.TargetListener.Id.Split('/')[-1])", "Redirects to")
+                            $Diagram.AddLink($UrlPathMapNode.Name, "listener_$($RedirectConfiguration.TargetListener.Id.Split('/')[-1])", "Redirects to")
                         }
                     }   
                 }
@@ -196,10 +196,10 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                 If ($RedirectConfiguration) {
                     If ($RedirectConfiguration.TargetUrl) {
                         $RedirectConfigurationNode = [MermaidNode]::new("redirectconfiguration_$($RedirectConfiguration.Name)", "External URL: $($RedirectConfiguration.TargetUrl)")
-                        $Diagram.AddEdge($RuleNode.Name, $RedirectConfigurationNode.Name, "Redirects to")
+                        $Diagram.AddLink($RuleNode.Name, $RedirectConfigurationNode.Name, "Redirects to")
                     }
                     Else {
-                        $Diagram.AddEdge($RuleNode.Name, "listener_$($RedirectConfiguration.TargetListener.Id.Split('/')[-1])", "Redirects to")
+                        $Diagram.AddLink($RuleNode.Name, "listener_$($RedirectConfiguration.TargetListener.Id.Split('/')[-1])", "Redirects to")
                     }  
                 }
     
@@ -219,19 +219,19 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
     
                     $BackendAddressPoolNode = [MermaidNode]::new("backendaddresspool_$($BackendAddressPool.Name)", "Backend Address Pool: $($BackendAddressPool.Name)<br>Targets:<br>$($Backends -join "<br>")")
                     $Diagram.AddNode($BackendAddressPoolNode)
-                    $Diagram.AddEdge($RuleNode.Name, $BackendAddressPoolNode.Name)
+                    $Diagram.AddLink($RuleNode.Name, $BackendAddressPoolNode.Name)
                     
                     $BackendHttpSetting = $AppGateway.BackendHttpSettingsCollection | Where-Object Id -eq $Rule.BackendHttpSettings.Id
                     $BackendHttpSettingNode = [MermaidNode]::new("backendhttpsetting_$($BackendHttpSetting.Name)", "Backend HTTP Setting: $($BackendHttpSetting.Name)")
                     $Diagram.AddNode($BackendHttpSettingNode)
-                    $Diagram.AddEdge($RuleNode.Name, $BackendHttpSettingNode.Name)
+                    $Diagram.AddLink($RuleNode.Name, $BackendHttpSettingNode.Name)
                 }
     
                 If ($Rule.RewriteRuleSet) {
                     $RewriteRuleSet = $AppGateway.RewriteRuleSets | Where-Object Id -eq $Rule.RewriteRuleSet.Id
                     $RewriteRuleSetNode = [MermaidNode]::new("rewriteruleset_$($RewriteRuleSet.Name)", "Rewrite Rule Set: $($RewriteRuleSet.Name)")
                     $Diagram.AddNode($RewriteRuleSetNode)
-                    $Diagram.AddEdge($RuleNode.Name, $RewriteRuleSetNode.Name)
+                    $Diagram.AddLink($RuleNode.Name, $RewriteRuleSetNode.Name)
                 }
             }
         }

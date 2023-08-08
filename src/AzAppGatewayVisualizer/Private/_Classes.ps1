@@ -11,12 +11,12 @@ class MermaidNode {
     }
 }
 
-Class MermaidEdge {
+Class MermaidLink {
     [string]$Label
     [string]$LeftNode
     [string]$RightNode
     
-    MermaidEdge (        
+    MermaidLink (        
         [string]$LeftNode,
         [string]$RightNode
     ) {
@@ -24,7 +24,7 @@ Class MermaidEdge {
         $this.RightNode = $RightNode
     }
 
-    MermaidEdge (        
+    MermaidLink (        
         [string]$LeftNode,
         [string]$RightNode,
         [string]$Label
@@ -38,7 +38,7 @@ Class MermaidEdge {
 Class MermaidDiagram {
     [string]$GraphDirection=$TB
     [System.Collections.Generic.List[MermaidNode]]$Nodes = [System.Collections.Generic.List[MermaidNode]]::new()
-    [System.Collections.Generic.List[MermaidEdge]]$Edges = [System.Collections.Generic.List[MermaidEdge]]::new()
+    [System.Collections.Generic.List[MermaidLink]]$Links = [System.Collections.Generic.List[MermaidLink]]::new()
 
     MermaidDiagram(){}
 
@@ -64,21 +64,21 @@ Class MermaidDiagram {
         $this.Nodes.Add($Node)
     }
 
-    [void]AddEdge(
+    [void]AddLink(
         [string]$LeftNode,
         [string]$RightNode
     ) {
-        $Edge = [MermaidEdge]::new($LeftNode, $RightNode)
-        $this.Edges.Add($Edge)
+        $Link = [MermaidLink]::new($LeftNode, $RightNode)
+        $this.Links.Add($Link)
     }
 
-    [void]AddEdge(
+    [void]AddLink(
         [string]$LeftNode,
         [string]$RightNode,
         [string]$Label
     ) {
-        $Edge = [MermaidEdge]::new($LeftNode, $RightNode, $Label)
-        $this.Edges.Add($Edge)
+        $Link = [MermaidLink]::new($LeftNode, $RightNode, $Label)
+        $this.Links.Add($Link)
     }
 
     [string]GenerateDiagram() {
@@ -92,17 +92,17 @@ Class MermaidDiagram {
             $MermaidMarkdown.AppendLine("[""$($Node.Label)""]")
         }
 
-        foreach ($Edge in $this.Edges) {
+        foreach ($Link in $this.Links) {
             $MermaidMarkdown.Append('  ')
-            $MermaidMarkdown.Append($Edge.LeftNode)
+            $MermaidMarkdown.Append($Link.LeftNode)
 
-            If ($Edge.Label) {
-                $MermaidMarkdown.Append(" -- $($Edge.Label)")
+            If ($Link.Label) {
+                $MermaidMarkdown.Append(" -- $($Link.Label)")
             }
 
             $MermaidMarkdown.Append(" --> ")
 
-            $MermaidMarkdown.AppendLine($Edge.RightNode)
+            $MermaidMarkdown.AppendLine($Link.RightNode)
         }
 
         $MermaidMarkdown = ($MermaidMarkdown -split "`n" | Select-Object -Unique) -join "`n"
