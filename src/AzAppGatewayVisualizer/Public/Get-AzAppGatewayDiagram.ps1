@@ -81,50 +81,72 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
         foreach ($Hostname in $Hostnames) {
             $Listeners = $AppGateway.HttpListeners | Where-Object { $_.Hostname -eq $Hostname }
             foreach ($Listener in $Listeners) {
+
+                $ListenerNode = [MermaidNode]::new("listener_$($Listener.Name)", "Listener: $($Listener.Name)<br>Hostname: $($Hostname)<br>Port: $($Listener.FrontendPort.Id.Split('_')[-1])<br>Protocol: $($Listener.Protocol.ToUpper())]")
+                $Diagram.AddNode($ListenerNode)
+
                 if ($Listener.FirewallPolicy) {
                     $PolicyName = $Listener.FirewallPolicy.Id.Split('/')[-1]
                     $PolicyResourceGroupName = $Listener.FirewallPolicy.Id.Split('/')[4]
                     $WafPolicy = Get-AzApplicationGatewayFirewallPolicy -Name $PolicyName -ResourceGroupName $PolicyResourceGroupName
-                    $MermaidMarkdown += "wafpolicy_$($WafPolicy.Name)[] --> listener_$($Listener.Name)`n"
 
-                    $Diagram.AddNode("wafpolicy_$($WafPolicy.Name)", "WAF policy: $($WafPolicy.Name)")
-                    $Diagram.AddEdge("wafpolicy_$($WafPolicy.Name)", "listener_$($Listener.Name)")
+                    $WafPolicyNode = [MermaidNode]::new("wafpolicy_$($WafPolicy.Name)", "WAF policy: $($WafPolicy.Name)")
+                    $Diagram.AddNode($WafPolicyNode)
+                    $Diagram.AddEdge($WafPolicyNode.Name, $ListenerNode.Name)
                 }
                 elseif ($AppGateway.FirewallPolicy) {
                     $PolicyName = $AppGateway.FirewallPolicy.Id.Split('/')[-1]
                     $PolicyResourceGroupName = $AppGateway.FirewallPolicy.Id.Split('/')[4]
                     $WafPolicy = Get-AzApplicationGatewayFirewallPolicy -Name $PolicyName -ResourceGroupName $PolicyResourceGroupName
-                    $MermaidMarkdown += "wafpolicy_$($WafPolicy.Name)[""WAF policy (gateway default): $($WafPolicy.Name)""] --> listener_$($Listener.Name)`n"
+
+                    $WafPolicyNode = [MermaidNode]::new("wafpolicy_$($WafPolicy.Name)", "WAF policy (gateway default): $($WafPolicy.Name)")
+                    $Diagram.AddNode($WafPolicyNode)
+                    $Diagram.AddEdge($WafPolicyNode.Name, $ListenerNode.Name)
                 }
+
+                $FrontendIpConfiguration = $AppGateway.FrontendIPConfigurations | Where-Object Id -eq $Listener.FrontendIpConfiguration.Id
+                $FrontendIpConfigurationNode = [MermaidNode]::new("frontendipconfiguration_$($FrontendIpConfiguration.Name)", "Frontend IP: $($FrontendIpConfiguration.Name)$(If($FrontendIpConfiguration.PrivateIpAddress){"<br>Private IP: $($FrontendIpConfiguration.PrivateIpAddress)"})")
+                $Diagram.AddNode($FrontendIpConfigurationNode)
+                $Diagram.AddEdge($FrontendIpConfigurationNode.Name, $ListenerNode.Name)
 
                 If ($FrontendIpConfiguration.PublicIpAddress) {
                     $PublicIpAddressName = $FrontendIpConfiguration.PublicIpAddress.Id.Split('/')[-1]
                     $PublicIpAddressResourceGroupName = $FrontendIpConfiguration.PublicIpAddress.Id.Split('/')[4]
                     $PublicIpAddress = Get-AzPublicIpAddress -Name $PublicIpAddressName -ResourceGroupName $PublicIpAddressResourceGroupName
-                    $MermaidMarkdown += "publicipaddress_$($PublicIpAddress.Name)[Public IP Address: $($PublicIpAddress.Name)<br>$($PublicIpAddress.IpAddress)] --> frontendipconfiguration$($FrontendIpConfiguration.Name)`n"
+
+                    $PublicIpAddressNode = [MermaidNode]::new("publicipaddress_$($PublicIpAddress.Name)", "[Public IP Address: $($PublicIpAddress.Name)<br>$($PublicIpAddress.IpAddress)]")
+                    $Diagram.AddNode($PublicIpAddressNode)
+                    $Diagram.AddEdge($PublicIpAddressNode.Name, $FrontendIpConfigurationNode.Name)
                 }
-                $FrontendIpConfiguration = $AppGateway.FrontendIPConfigurations | Where-Object Id -eq $Listener.FrontendIpConfiguration.Id
-                $MermaidMarkdown += "frontendipconfiguration$($FrontendIpConfiguration.Name)[Frontend IP: $($FrontendIpConfiguration.Name)$(If($FrontendIpConfiguration.PrivateIpAddress){"<br>Private IP: $($FrontendIpConfiguration.PrivateIpAddress)"})] ---> listener_$($Listener.Name)`n"
-                
-                $MermaidMarkdown += "listener_$($Listener.Name)[Listener: $($Listener.Name)<br>Hostname: $($Hostname)<br>Port: $($Listener.FrontendPort.Id.Split('_')[-1])<br>Protocol: $($Listener.Protocol.ToUpper())]`n"
                 
                 if ($Listener.Protocol -eq 'Https') {
                     $SslCert = $AppGateway.SslCertificates | Where-Object Id -eq $Listener.SslCertificate.Id
-                    $MermaidMarkdown += "sslcert_$($SslCert.Name)[SSL Cert: $($SslCert.Name)] --> listener_$($Listener.Name)`n"
+                    $SslCertNode = [MermaidNode]::new("sslcert_$($SslCert.Name)", "SSL Cert: $($SslCert.Name)")
+                    $Diagram.AddNode($SslCertNode)
+                    $Diagram.AddEdge($SslCertNode.Name, $ListenerNode.Name)
+
                     If ($SslCert.KeyVaultSecretId) {
                         $KeyVaultCertificateId = $SslCert.KeyVaultSecretId.Replace('secrets', 'certificates')
                         $KeyVaultCertificateName = $KeyVaultCertificateId.Split('/')[4]
                         $KeyVaultName = $KeyVaultCertificateId.Split('/')[2].Split('.')[0]
-                        $MermaidMarkdown += "sslcert_$($SslCert.Name) --> keyvaultcert_$($KeyVaultCertificateName)[Key Vault Certificate: $KeyVaultCertificateName<br>Key Vault: $KeyVaultName]`n"
+
+                        $KeyVaultCertificateNode = [MermaidNode]::new("keyvaultcert_$($KeyVaultCertificateName)", "Key Vault Certificate: $KeyVaultCertificateName<br>Key Vault: $KeyVaultName")
+                        $Diagram.AddNode($KeyVaultCertificateNode)
+                        $Diagram.AddEdge($KeyVaultCertificateNode.Name, $SslCertNode).Name
                     }
                 }
 
                 $Rule = $AppGateway.RequestRoutingRules | Where-Object { $_.HttpListener.Id -eq $Listener.Id }
-                $MermaidMarkdown += "listener_$($Listener.Name) --> rule_$($Rule.Name)[Request Routing Rule: $($Rule.Name)]`n"
+
+                $RuleNode = [MermaidNode]::new("rule_$($Rule.Name)", "Request Routing Rule: $($Rule.Name)")
+                $Diagram.AddEdge($ListenerNode.Name, $RuleNode.Name)
+
                 if ($Rule.UrlPathMap.Id) {
                     $UrlPathMap = $AppGateway.UrlPathMaps | Where-Object Id -eq $Rule.UrlPathMap.Id
                     Foreach ($PathRule in $UrlPathMap.PathRules) {
-                        $MermaidMarkdown += "rule_$($Rule.Name) -- URL Paths: $($UrlPathMap.PathRules.Paths -join '<br>') ---> urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name)[Path Rule: $($PathRule.Name)]`n"
+
+                        $UrlPathMapNode = [MermaidNode]::new("urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name)", "Path Rule: $($PathRule.Name)")
+                        $Diagram.AddEdge($RuleNode.Name, $UrlPathMapNode.Name)
                         
                         If ($PathRule.BackendAddressPool) {
                             $BackendAddressPool = $AppGateway.BackendAddressPools | Where-Object Id -eq $PathRule.BackendAddressPool.Id
@@ -139,24 +161,28 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                                     "No targets"
                                 }
                             }
-                            $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) --> backendaddresspool_$($BackendAddressPool.Name)[Backend Address Pool: $($BackendAddressPool.Name)<br>Targets:<br>$($Backends -join "<br>")]`n"
+
+                            $BackendAddressPoolNode = [MermaidNode]::new("backendaddresspool_$($BackendAddressPool.Name)", "Backend Address Pool: $($BackendAddressPool.Name)<br>Targets:<br>$($Backends -join "<br>")")
+                            $Diagram.AddEdge($UrlPathMapNode.Name, $BackendAddressPoolNode.Name)
                             
                             $BackendHttpSetting = $AppGateway.BackendHttpSettingsCollection | Where-Object Id -eq $PathRule.BackendHttpSettings.Id
-                            $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) --> backendhttpsetting_$($BackendHttpSetting.Name)[Backend HTTP Setting: $($BackendHttpSetting.Name)]`n"
+                            $BackendHttpSettingNode = [MermaidNode]::new("backendhttpsetting_$($BackendHttpSetting.Name)", "Backend HTTP Setting: $($BackendHttpSetting.Name)")
+                            $Diagram.AddEdge($UrlPathMapNode.Name, $BackendHttpSettingNode.Name)
                         }
                         
                         If ($PathRule.RewriteRuleSet) {
                             $RewriteRuleSet = $AppGateway.RewriteRuleSets | Where-Object Id -eq $PathRule.RewriteRuleSet.Id
-                            $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) --> rewriteruleset_$($RewriteRuleSet.Name)[Rewrite Rule Set: $($RewriteRuleSet.Name)]`n"
-                            
+                            $RewriteRuleSetNode = [MermaidNode]::new("rewriteruleset_$($RewriteRuleSet.Name)", "Rewrite Rule Set: $($RewriteRuleSet.Name)")
+                            $Diagram.AddEdge($UrlPathMapNode.Name, $RewriteRuleSetNode.Name)
                         }
 
                         $RedirectConfiguration = $AppGateway.RedirectConfigurations | Where-Object Id -eq $($AppGateway.Id + "/redirectConfigurations/" + $Rule.Name + "_" + $PathRule.Name)
                         If ($RedirectConfiguration.TargetUrl) {
-                            $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) -- Redirects to --> redirectconfiguration_$($RedirectConfiguration.Name)[External URL: $($RedirectConfiguration.TargetUrl)]`n"
+                            $RedirectConfigurationNode = [MermaidNode]::new("redirectconfiguration_$($RedirectConfiguration.Name)", "External URL: $($RedirectConfiguration.TargetUrl)")
+                            $Diagram.AddEdge($UrlPathMapNode.Name, $RedirectConfigurationNode.Name)
                         }
                         elseif ($RedirectConfiguration.TargetListener) {
-                            $MermaidMarkdown += "urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name) -- Redirects to --> listener_$($RedirectConfiguration.TargetListener.Id.Split('/')[-1])`n"  
+                            $Diagram.AddEdge($UrlPathMapNode.Name, "listener_$($RedirectConfiguration.TargetListener.Id.Split('/')[-1])")
                         }
                     }   
                 }
@@ -164,16 +190,15 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                 $RedirectConfiguration = $AppGateway.RedirectConfigurations | Where-Object Id -eq $($AppGateway.Id + "/redirectConfigurations/" + $Rule.Name)
                 If ($RedirectConfiguration) {
                     If ($RedirectConfiguration.TargetUrl) {
-                        $MermaidMarkdown += "rule_$($Rule.Name) -- Redirects to --> redirectconfiguration_$($RedirectConfiguration.Name)[External URL: $($RedirectConfiguration.TargetUrl)]`n"
+                        $RedirectConfigurationNode = [MermaidNode]::new("redirectconfiguration_$($RedirectConfiguration.Name)", "External URL: $($RedirectConfiguration.TargetUrl)")
+                        $Diagram.AddEdge($RuleNode.Name, $RedirectConfigurationNode.Name)
                     }
                     Else {
-                        $MermaidMarkdown += "rule_$($Rule.Name) -- Redirects to --> listener_$($RedirectConfiguration.TargetListener.Id.Split('/')[-1])`n"
+                        $Diagram.AddEdge($RuleNode.Name, "listener_$($RedirectConfiguration.TargetListener.Id.Split('/')[-1])")
                     }  
                 }
     
-                If ($Rule.BackendAddressPool) {
-                    $MermaidMarkdown += "rule_$($Rule.Name)`n"
-    
+                If ($Rule.BackendAddressPool) {    
                     $BackendAddressPool = $AppGateway.BackendAddressPools | Where-Object Id -eq $Rule.BackendAddressPool.Id
                     $Backends = $BackendAddressPool.BackendAddresses | ForEach-Object {
                         If ($_.Fqdn) {
@@ -186,20 +211,26 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                             "Pool without targets"
                         }
                     }
-                    $MermaidMarkdown += "rule_$($Rule.Name) --> backendaddresspool_$($BackendAddressPool.Name)[Backend Address Pool: $($BackendAddressPool.Name)<br>Targets:<br>$($Backends -join "<br>")]`n"
     
+                    $BackendAddressPoolNode = [MermaidNode]::new("backendaddresspool_$($BackendAddressPool.Name)", "Backend Address Pool: $($BackendAddressPool.Name)<br>Targets:<br>$($Backends -join "<br>")")
+                    $Diagram.AddEdge($RuleNode.Name, $BackendAddressPoolNode.Name)
+                    
                     $BackendHttpSetting = $AppGateway.BackendHttpSettingsCollection | Where-Object Id -eq $Rule.BackendHttpSettings.Id
-                    $MermaidMarkdown += "rule_$($Rule.Name) --> backendhttpsetting_$($BackendHttpSetting.Name)[Backend HTTP Setting: $($BackendHttpSetting.Name)]`n"
+                    $BackendHttpSettingNode = [MermaidNode]::new("backendhttpsetting_$($BackendHttpSetting.Name)", "Backend HTTP Setting: $($BackendHttpSetting.Name)")
+                    $Diagram.AddEdge($RuleNode.Name, $BackendHttpSettingNode.Name)
                 }
     
                 If ($Rule.RewriteRuleSet) {
                     $RewriteRuleSet = $AppGateway.RewriteRuleSets | Where-Object Id -eq $Rule.RewriteRuleSet.Id
-                    $MermaidMarkdown += "rule_$($Rule.Name) --> rewriteruleset_$($RewriteRuleSet.Name)[Rewrite Rule Set: $($RewriteRuleSet.Name)]`n"
+                    $RewriteRuleSetNode = [MermaidNode]::new("rewriteruleset_$($RewriteRuleSet.Name)", "Rewrite Rule Set: $($RewriteRuleSet.Name)")
+                    $Diagram.AddEdge($RuleNode.Name, $RewriteRuleSetNode.Name)
                 }
             }
         }
     }
     end {
+
+        $MermaidMarkdown = $Diagram.GenerateDiagram()
         #Remove duplicate lines from the diagram
         $MermaidMarkdown = ($MermaidMarkdown -split "`n" | Select-Object -Unique) -join "`n"
 
