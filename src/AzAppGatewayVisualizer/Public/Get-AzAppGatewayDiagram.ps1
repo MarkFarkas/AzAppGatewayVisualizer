@@ -132,7 +132,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
 
                         $KeyVaultCertificateNode = [MermaidNode]::new("keyvaultcert_$($KeyVaultCertificateName)", "Key Vault Certificate: $KeyVaultCertificateName<br>Key Vault: $KeyVaultName")
                         $Diagram.AddNode($KeyVaultCertificateNode)
-                        $Diagram.AddEdge($KeyVaultCertificateNode.Name, $SslCertNode.Name)
+                        $Diagram.AddEdge($SslCertNode.Name, $KeyVaultCertificateNode.Name)
                     }
                 }
 
