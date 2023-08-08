@@ -104,15 +104,9 @@ Class MermaidDiagram {
 
             $MermaidMarkdown.AppendLine($Edge.RightNode)
         }
+
+        $MermaidMarkdown = ($MermaidMarkdown -split "`n" | Select-Object -Unique) -join "`n"
+
         return $MermaidMarkdown
     }
 }
-
-
-$Diagram = [MermaidDiagram]::new()
-
-$Diagram.AddNode("rule_httpRule-1", "HTTP Rule 1")
-$Diagram.AddNode("rule_httpRule-2", "HTTP Rule 2")
-$Diagram.AddEdge("rule_httpRule-1", "rule_httpRule-2", "Redirects to")
-$Diagram.AddEdge("rule_httpRule-1", "rule_httpRule-2")
-$Diagram.GenerateDiagram()
