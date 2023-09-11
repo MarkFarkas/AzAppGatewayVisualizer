@@ -1,4 +1,4 @@
-function Get-AzAppGatewayDiagram {
+function Get-AzAppGatewayDiagramWithClasses {
     <#
 .SYNOPSIS
 Generates a Mermaid diagram for an Azure Application Gateway.
@@ -107,7 +107,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                 $FrontendIpConfiguration = $AppGateway.FrontendIPConfigurations | Where-Object Id -eq $Listener.FrontendIpConfiguration.Id
                 $FrontendIpConfigurationNode = [MermaidNode]::new("frontendipconfiguration_$($FrontendIpConfiguration.Name)", "Frontend IP: $($FrontendIpConfiguration.Name)$(If($FrontendIpConfiguration.PrivateIpAddress){"<br>Private IP: $($FrontendIpConfiguration.PrivateIpAddress)"})")
                 $Diagram.AddNode($FrontendIpConfigurationNode)
-                $Diagram.AddLink([MermaidLink]::new($FrontendIpConfigurationNode.Name, $ListenerNode.Name))
+                $Diagram.AddLink([MermaidLink]::new($FrontendIpConfigurationNode.Name, $ListenerNode.Name, 2))
 
                 If ($FrontendIpConfiguration.PublicIpAddress) {
                     $PublicIpAddressName = $FrontendIpConfiguration.PublicIpAddress.Id.Split('/')[-1]
@@ -148,7 +148,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
 
                         $UrlPathMapNode = [MermaidNode]::new("urlpathmap_$($UrlPathMap.Name)_$($PathRule.Name)", "Path Rule: $($PathRule.Name)")
                         $Diagram.AddNode($UrlPathMapNode)
-                        $Diagram.AddLink([MermaidLink]::new($RuleNode.Name, $UrlPathMapNode.Name, "URL Paths: $($UrlPathMap.PathRules.Paths -join '<br>')"))
+                        $Diagram.AddLink([MermaidLink]::new($RuleNode.Name, $UrlPathMapNode.Name, "URL Paths: $($UrlPathMap.PathRules.Paths -join '<br>')", 2))
                         
                         If ($PathRule.BackendAddressPool) {
                             $BackendAddressPool = $AppGateway.BackendAddressPools | Where-Object Id -eq $PathRule.BackendAddressPool.Id
@@ -172,6 +172,13 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                             $BackendHttpSettingNode = [MermaidNode]::new("backendhttpsetting_$($BackendHttpSetting.Name)", "Backend HTTP Setting: $($BackendHttpSetting.Name)")
                             $Diagram.AddNode($BackendHttpSettingNode)
                             $Diagram.AddLink([MermaidLink]::new($UrlPathMapNode.Name, $BackendHttpSettingNode.Name))
+
+                            If ($BackendHttpSetting.Probe) {
+                                $HealthProbe = $AppGateway.Probes | Where-Object id -eq $BackendHttpSetting.Probe.Id
+                                $HealthProbeNode = [MermaidNode]::new("healthprobe_$($HealthProbe.Name)", "Health Probe: $($HealthProbe.Name)")
+                                $Diagram.AddNode($HealthProbeNode)
+                                $Diagram.AddLink([MermaidLink]::new($BackendHttpSettingNode.Name, $HealthProbeNode.Name))
+                            }
                         }
                         
                         If ($PathRule.RewriteRuleSet) {
@@ -184,7 +191,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                         If ($RedirectConfiguration.TargetUrl) {
                             $RedirectConfigurationNode = [MermaidNode]::new("redirectconfiguration_$($RedirectConfiguration.Name)", "External URL: $($RedirectConfiguration.TargetUrl)")
                             $Diagram.AddNode($RedirectConfigurationNode)
-                            $Diagram.AddLink([MermaidLink]::new($UrlPathMapNode.Name, $RedirectConfigurationNode.Name,"Redirects to"))
+                            $Diagram.AddLink([MermaidLink]::new($UrlPathMapNode.Name, $RedirectConfigurationNode.Name, "Redirects to"))
                         }
                         elseif ($RedirectConfiguration.TargetListener) {
                             $Diagram.AddLink([MermaidLink]::new($UrlPathMapNode.Name, "listener_$($RedirectConfiguration.TargetListener.Id.Split('/')[-1])", "Redirects to"))
@@ -196,6 +203,7 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                 If ($RedirectConfiguration) {
                     If ($RedirectConfiguration.TargetUrl) {
                         $RedirectConfigurationNode = [MermaidNode]::new("redirectconfiguration_$($RedirectConfiguration.Name)", "External URL: $($RedirectConfiguration.TargetUrl)")
+                        $Diagram.AddNode($RedirectConfigurationNode)
                         $Diagram.AddLink([MermaidLink]::new($RuleNode.Name, $RedirectConfigurationNode.Name, "Redirects to"))
                     }
                     Else {
@@ -225,6 +233,13 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
                     $BackendHttpSettingNode = [MermaidNode]::new("backendhttpsetting_$($BackendHttpSetting.Name)", "Backend HTTP Setting: $($BackendHttpSetting.Name)")
                     $Diagram.AddNode($BackendHttpSettingNode)
                     $Diagram.AddLink([MermaidLink]::new($RuleNode.Name, $BackendHttpSettingNode.Name))
+
+                    If ($BackendHttpSetting.Probe) {
+                        $HealthProbe = $AppGateway.Probes | Where-Object id -eq $BackendHttpSetting.Probe.Id
+                        $HealthProbeNode = [MermaidNode]::new("healthprobe_$($HealthProbe.Name)", "Health Probe: $($HealthProbe.Name)")
+                        $Diagram.AddNode($HealthProbeNode)
+                        $Diagram.AddLink([MermaidLink]::new($BackendHttpSettingNode.Name, $HealthProbeNode.Name))
+                    }
                 }
     
                 If ($Rule.RewriteRuleSet) {
