@@ -252,6 +252,8 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
         }
     }
     end {
-        Return $Diagram
+        [PSCustomObject]@{
+            MermaidMarkdown = $Diagram.GenerateDiagram()
+        }
     }
 }
