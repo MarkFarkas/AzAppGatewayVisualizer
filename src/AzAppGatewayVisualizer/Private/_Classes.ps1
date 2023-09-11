@@ -12,9 +12,10 @@ class MermaidNode {
 }
 
 Class MermaidLink {
-    [string]$Label
     [string]$LeftNode
     [string]$RightNode
+    [string]$Label = $null
+    [int]$MinimumLength = 1
     
     MermaidLink (        
         [string]$LeftNode,
@@ -27,37 +28,49 @@ Class MermaidLink {
     MermaidLink (        
         [string]$LeftNode,
         [string]$RightNode,
+        [int]$MinimumLength
+    ) {
+        $this.LeftNode = $LeftNode
+        $this.RightNode = $RightNode
+        $this.MinimumLength = $MinimumLength
+    }
+
+    MermaidLink (        
+        [string]$LeftNode,
+        [string]$RightNode,
         [string]$Label
     ) {
         $this.LeftNode = $LeftNode
         $this.RightNode = $RightNode
         $this.Label = $Label
     }
+
+    MermaidLink (        
+        [string]$LeftNode,
+        [string]$RightNode,
+        [string]$Label,
+        [int]$MinimumLength
+    ) {
+        $this.LeftNode = $LeftNode
+        $this.RightNode = $RightNode
+        $this.Label = $Label
+        $this.MinimumLength = $MinimumLength
+    }
 }
 
 Class MermaidDiagram {
-    [string]$GraphDirection=$TB
+    [string]$GraphDirection = $TB
     [System.Collections.Generic.List[MermaidNode]]$Nodes = [System.Collections.Generic.List[MermaidNode]]::new()
     [System.Collections.Generic.List[MermaidLink]]$Links = [System.Collections.Generic.List[MermaidLink]]::new()
 
-    MermaidDiagram(){}
+    MermaidDiagram() {}
 
     MermaidDiagram(
         [string]$GraphDirection
     ) {
-        $this.GraphDirection =$GraphDirection
+        $this.GraphDirection = $GraphDirection
     }
 
-    #Add by name and label
-    [void]AddNode(
-        [string]$Name, 
-        [string]$Label
-    ) {
-        $Node = [MermaidNode]::new($Name, $Label)
-        $this.Nodes.Add($Node)
-    }
-
-    #Add node by node object
     [void]AddNode(
         [MermaidNode]$Node
     ) {
@@ -65,19 +78,8 @@ Class MermaidDiagram {
     }
 
     [void]AddLink(
-        [string]$LeftNode,
-        [string]$RightNode
+        [MermaidLink]$Link
     ) {
-        $Link = [MermaidLink]::new($LeftNode, $RightNode)
-        $this.Links.Add($Link)
-    }
-
-    [void]AddLink(
-        [string]$LeftNode,
-        [string]$RightNode,
-        [string]$Label
-    ) {
-        $Link = [MermaidLink]::new($LeftNode, $RightNode, $Label)
         $this.Links.Add($Link)
     }
 
@@ -100,7 +102,11 @@ Class MermaidDiagram {
                 $MermaidMarkdown.Append(" -- $($Link.Label)")
             }
 
-            $MermaidMarkdown.Append(" --> ")
+            $MermaidMarkdown.Append(" ")
+            For ($i=0; $i -le $Link.MinimumLength; $i++){
+                $MermaidMarkdown.Append("-")
+            }
+            $MermaidMarkdown.Append("> ")
 
             $MermaidMarkdown.AppendLine($Link.RightNode)
         }
@@ -110,3 +116,11 @@ Class MermaidDiagram {
         return $MermaidMarkdown
     }
 }
+
+$diagram=[mermaidDiagram]::new()    
+$node1=[mermaidNode]::new("node1","node1")    
+$diagram.AddNode($node1)
+
+$diagram.AddLink("node1","node1",2)
+$diagram.AddLink("node1","node1",3)
+$diagram.AddLink("node1","node1",4)
