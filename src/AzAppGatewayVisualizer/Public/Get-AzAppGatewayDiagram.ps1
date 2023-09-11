@@ -1,4 +1,4 @@
-function Get-AzAppGatewayDiagramWithClasses {
+function Get-AzAppGatewayDiagram {
     <#
 .SYNOPSIS
 Generates a Mermaid diagram for an Azure Application Gateway.
