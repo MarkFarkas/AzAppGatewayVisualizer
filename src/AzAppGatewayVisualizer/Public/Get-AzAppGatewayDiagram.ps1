@@ -240,6 +240,3 @@ https://docs.microsoft.com/en-us/azure/application-gateway/overview
         Return $Diagram
     }
 }
-
-$Diagram=Get-AzAppGatewayDiagram -AppGatewayName appgw-01 -ResourceGroupName rg-az-app-gateway-visualizer -Hostname "workload2.example.com"
-$diagram.GenerateDiagram() > new-diagram.md

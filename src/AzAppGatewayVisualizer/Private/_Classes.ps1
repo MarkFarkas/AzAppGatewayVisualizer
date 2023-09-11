@@ -116,11 +116,3 @@ Class MermaidDiagram {
         return $MermaidMarkdown
     }
 }
-
-$diagram=[mermaidDiagram]::new()    
-$node1=[mermaidNode]::new("node1","node1")    
-$diagram.AddNode($node1)
-
-$diagram.AddLink("node1","node1",2)
-$diagram.AddLink("node1","node1",3)
-$diagram.AddLink("node1","node1",4)
